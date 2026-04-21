@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prime Day 2026 — 促銷費用計算器</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --prime-blue: #00a8e1;
+      --prime-dark: #0f1111;
+      --prime-orange: #ff9900;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --border: #d5d9d9;
+      --text: #0f1111;
+      --muted: #565959;
+      --green: #067d62;
+      --red: #c7511f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Amazon Ember', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); }
+    .header { background: linear-gradient(135deg, var(--prime-dark) 0%, #232f3e 100%); color: white; padding: 24px 0; text-align: center; }
+    .header-badge { display: inline-block; background: var(--prime-blue); color: white; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 12px; border-radius: 4px; margin-bottom: 10px; }
+    .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .header p { color: #adb1b8; font-size: 14px; }
+    .container { max-width: 920px; margin: 0 auto; padding: 24px 16px 48px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+    .card-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .input-grid { grid-template-columns: 1fr; } }
+    .field label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.5px; }
+    .field input, .field select { width: 100%; padding: 10px 12px; font-size: 16px; border: 1px solid var(--border); border-radius: 6px; background: white; transition: border-color 0.15s; }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--prime-blue); box-shadow: 0 0 0 3px rgba(0,168,225,0.15); }
+    .field input:disabled { background: #f3f3f3; color: var(--muted); }
+    .field .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .field .cap-warn { font-size: 11px; color: var(--red); margin-top: 4px; font-weight: 600; }
+    .deal-type-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .deal-type-pills button { flex: 1; min-width: 140px; padding: 10px 14px; font-size: 14px; font-weight: 600; border: 2px solid var(--border); border-radius: 8px; background: white; cursor: pointer; transition: all 0.15s; text-align: center; }
+    .deal-type-pills button:hover { border-color: var(--prime-blue); }
+    .deal-type-pills button.active { border-color: var(--prime-blue); background: #e7f6fd; color: var(--prime-dark); }
+    .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .toggle-row span { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .toggle-row span.active { color: var(--prime-dark); }
+    .toggle-switch { position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 12px; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+    .toggle-switch.on { background: var(--prime-blue); }
+    .toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: transform 0.2s; }
+    .toggle-switch.on::after { transform: translateX(20px); }
+    .line-items { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .line-items th { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.5px; text-align: left; padding: 8px 6px; border-bottom: 2px solid var(--border); }
+    .line-items td { padding: 6px; vertical-align: middle; }
+    .line-items input { width: 100%; padding: 8px 10px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; }
+    .line-items input:focus { outline: none; border-color: var(--prime-blue); box-shadow: 0 0 0 2px rgba(0,168,225,0.15); }
+    .line-items input:disabled { background: #f3f3f3; color: var(--text); font-weight: 600; }
+    .line-items .derived { background: #f0f7fb; font-weight: 600; color: var(--prime-dark); }
+    .line-items tfoot td { padding-top: 10px; border-top: 2px solid var(--prime-dark); font-weight: 700; font-size: 14px; }
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .btn { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+    .btn-add { background: var(--prime-blue); color: white; }
+    .btn-add:hover { background: #008abf; }
+    .btn-remove { background: none; color: var(--red); border: 1px solid var(--red); padding: 6px 10px; font-size: 12px; border-radius: 4px; }
+    .btn-remove:hover { background: #fef0ec; }
+    .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .results-grid { grid-template-columns: 1fr; } }
+    .result-box { background: var(--bg); border-radius: 8px; padding: 16px; text-align: center; }
+    .result-box.highlight { background: linear-gradient(135deg, #232f3e 0%, #37475a 100%); color: white; grid-column: 1 / -1; }
+    .result-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; opacity: 0.7; margin-bottom: 6px; }
+    .result-value { font-size: 28px; font-weight: 700; }
+    .result-box.highlight .result-value { color: var(--prime-orange); font-size: 34px; }
+    .result-sub { font-size: 12px; opacity: 0.6; margin-top: 4px; }
+    .breakdown { margin-top: 16px; }
+    .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .breakdown-row:last-child { border-bottom: none; }
+    .breakdown-row .label { color: var(--muted); }
+    .breakdown-row .value { font-weight: 700; }
+    .breakdown-row.cap-hit .value { color: var(--red); }
+    .btn-export { background: var(--prime-orange); color: var(--prime-dark); margin-top: 16px; padding: 12px 24px; font-size: 14px; width: 100%; }
+    .btn-export:hover { background: #e68a00; }
+    .disclaimer { text-align: center; font-size: 12px; color: var(--muted); margin-top: 24px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+    const fmt = (n) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const fmtExact = (n) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const num = (n) => n.toLocaleString('en-US');
+    const FLAT_FEE = 100, EARLY_BIRD_FEE = 50, VARIABLE_RATE = 0.015, VARIABLE_CAP = 5000;
+
+    const DEAL_TYPES = {
+      'Prime 專屬折扣': { input: 'asin', cap: 500, label: 'ASIN', hint: '每筆促銷最多 500 個 ASIN' },
+      '手動促銷':       { input: 'asin', cap: 500, label: 'ASIN', hint: '每筆促銷最多 500 個 ASIN' },
+      'Best Deal':      { input: 'pasin', cap: 1, label: 'pASIN', hint: '每筆促銷 1 個 pASIN — 每列 = 1 筆促銷' },
+      'Lightning Deal': { input: 'pasin', cap: 1, label: 'pASIN', hint: '每筆促銷 1 個 pASIN — 每列 = 1 筆促銷' },
+    };
+    const makeRow = () => ({ id: Date.now() + Math.random(), refPrice: '', discount: '', units: '' });
+
+    function App() {
+      const [dealType, setDealType] = useState('Best Deal');
+      const [inputLevel, setInputLevel] = useState('deal');
+      const [earlyBird, setEarlyBird] = useState(false);
+      const [count, setCount] = useState(5);
+      const [opsMode, setOpsMode] = useState('derived');
+      const [directOps, setDirectOps] = useState('');
+      const [units, setUnits] = useState(1000);
+      const [price, setPrice] = useState(29.99);
+      const [rows, setRows] = useState([makeRow()]);
+
+      const config = DEAL_TYPES[dealType];
+      const earlyBirdEligible = config.cap === 1;
+      const effectiveEarlyBird = earlyBird && earlyBirdEligible;
+      const isOverCap = inputLevel === 'deal' && (count || 0) > config.cap;
+
+      const updateRow = (id, field, val) => setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: val === '' ? '' : Number(val) } : r));
+      const addRow = () => setRows(prev => [...prev, makeRow()]);
+      const removeRow = (id) => { if (rows.length > 1) setRows(prev => prev.filter(r => r.id !== id)); };
+      const handleNum = (setter) => (e) => { const v = e.target.value; if (v === '') { setter(''); return; } setter(Number(v)); };
+
+      const exportCSV = () => {
+        const csvRows = [
+          ['PD26 促銷費用計算器 — 結果'],
+          [],
+          ['促銷類型', dealType],
+          ['早鳥費率', effectiveEarlyBird ? '是 ($50/筆)' : '否 ($100/筆)'],
+          ['輸入模式', inputLevel === 'item' ? `${config.label} 層級` : '促銷層級總計'],
+          [],
+          ['指標', '數值'],
+          ['訂單商品銷售額 (OPS)', `${calc.ops.toFixed(2)}`],
+          ['有效促銷數量', calc.d],
+          ['固定費率', `${calc.flatRate}`],
+          ['固定費用總計', `${calc.totalFlat.toFixed(2)}`],
+          ['浮動費用 (OPS 的 1.5%)', `${calc.rawVariable.toFixed(2)}`],
+          ['每筆促銷浮動費用上限', `${VARIABLE_CAP}`],
+          ['浮動費用上限總計', `${(VARIABLE_CAP * calc.d).toFixed(2)}`],
+          ['浮動費用 (上限後)', `${calc.cappedVariable.toFixed(2)}`],
+          ['是否觸及上限', calc.capHit ? '是' : '否'],
+          ['預估促銷費用總計', `${calc.totalFee.toFixed(2)}`],
+          ['費用佔 OPS 百分比', `${calc.feeAsPercent.toFixed(2)}%`],
+          ['每筆促銷費用', `${calc.feePerDeal.toFixed(2)}`],
+        ];
+        if (effectiveEarlyBird) csvRows.push(['早鳥節省金額', `${calc.savings.toFixed(2)}`]);
+        if (inputLevel === 'item') {
+          csvRows.push([], [`${config.label} 層級明細`], ['#', '參考價格', '折扣 %', '促銷價格', '數量', '該列 OPS']);
+          itemSummary.forEach((r, i) => csvRows.push([`${config.label} ${i+1}`, `${(r.refPrice||0).toFixed(2)}`, `${r.discount||0}%`, `${r.dealPrice.toFixed(2)}`, r.units||0, `${r.lineOps.toFixed(2)}`]));
+        }
+        const csv = csvRows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+        const bom = '\uFEFF';
+        const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `PD26_費用估算_${dealType.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+      };
+
+      const itemSummary = useMemo(() => rows.map(r => {
+        const ref = Math.max(0, r.refPrice || 0), disc = Math.min(100, Math.max(0, r.discount || 0));
+        const dealPrice = ref * (100 - disc) / 100, u = Math.max(0, r.units || 0);
+        return { ...r, dealPrice, lineOps: dealPrice * u };
+      }), [rows]);
+
+      const calc = useMemo(() => {
+        let d, ops;
+        if (inputLevel === 'item') {
+          d = config.cap === 1 ? rows.length : 1;
+          ops = itemSummary.reduce((s, r) => s + r.lineOps, 0);
+        } else {
+          d = Math.max(0, count || 0);
+          ops = opsMode === 'direct' ? Math.max(0, directOps || 0) : Math.max(0, units || 0) * Math.max(0, price || 0);
+        }
+        const flatRate = effectiveEarlyBird ? EARLY_BIRD_FEE : FLAT_FEE;
+        const totalFlat = d * flatRate, rawVariable = ops * VARIABLE_RATE;
+        const cappedVariable = Math.min(rawVariable, VARIABLE_CAP * d), capHit = rawVariable > VARIABLE_CAP * d;
+        const totalFee = totalFlat + cappedVariable, baseFee = d * FLAT_FEE + cappedVariable, savings = baseFee - totalFee;
+        const feePerDeal = d > 0 ? totalFee / d : 0, feeAsPercent = ops > 0 ? (totalFee / ops) * 100 : 0;
+        return { ops, totalFlat, rawVariable, cappedVariable, capHit, totalFee, baseFee, savings, feePerDeal, feeAsPercent, d, flatRate };
+      }, [inputLevel, effectiveEarlyBird, config.cap, count, opsMode, directOps, units, price, rows, itemSummary]);
+
+      return (
+        <>
+          <div className="header">
+            <div className="header-badge">Prime Day 2026</div>
+            <h1>促銷費用計算器</h1>
+            <p>為賣家與客戶經理模擬促銷費用</p>
+          </div>
+          <div className="container">
+            <div className="card">
+              <div className="card-title">🏷️ 促銷類型</div>
+              <div className="deal-type-pills">
+                {Object.keys(DEAL_TYPES).map(dt => (
+                  <button key={dt} className={dealType === dt ? 'active' : ''} onClick={() => { setDealType(dt); setCount(''); setRows([makeRow()]); }}>{dt}</button>
+                ))}
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-title">🐦 早鳥費率</div>
+              {earlyBirdEligible ? (<>
+                <div className="toggle-row">
+                  <span className={!earlyBird ? 'active' : ''}>標準費率 ({fmt(FLAT_FEE)}/筆)</span>
+                  <div className={`toggle-switch ${earlyBird ? 'on' : ''}`} onClick={() => setEarlyBird(b => !b)} />
+                  <span className={earlyBird ? 'active' : ''}>早鳥費率 ({fmt(EARLY_BIRD_FEE)}/筆 — 5 折優惠)</span>
+                </div>
+                {earlyBird && calc.savings > 0 && (
+                  <div style={{ background: '#f0faf6', border: '1px solid #b5e3d0', borderRadius: 6, padding: '10px 14px', fontSize: 14, color: 'var(--green)', fontWeight: 600 }}>
+                    🎉 使用早鳥費率可節省 {fmtExact(calc.savings)}（相較標準費率 {fmt(FLAT_FEE)}/筆）
+                  </div>
+                )}
+              </>) : (
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>早鳥價格僅適用於 Best Deal 和 Lightning Deal。請切換促銷類型以啟用。</div>
+              )}
+            </div>
+            <div className="card">
+              <div className="card-title">📊 輸入模式</div>
+              <div className="toggle-row">
+                <span className={inputLevel === 'deal' ? 'active' : ''}>促銷層級總計</span>
+                <div className={`toggle-switch ${inputLevel === 'item' ? 'on' : ''}`} onClick={() => setInputLevel(l => l === 'deal' ? 'item' : 'deal')} />
+                <span className={inputLevel === 'item' ? 'active' : ''}>{config.label} 層級輸入</span>
+              </div>
+              {inputLevel === 'item' ? (<>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="line-items">
+                    <thead><tr>
+                      <th style={{width:40}}>#</th><th>參考價格 ($)</th><th>折扣 %</th><th>促銷價格 ($)</th><th>數量</th><th>該列 OPS ($)</th><th style={{width:40}}></th>
+                    </tr></thead>
+                    <tbody>
+                      {itemSummary.map((r, i) => (
+                        <tr key={r.id}>
+                          <td style={{ fontWeight: 700, color: 'var(--muted)', fontSize: 13 }}>{config.label} {i + 1}</td>
+                          <td><input type="number" min="0" step="0.01" value={r.refPrice} onChange={e => updateRow(r.id, 'refPrice', e.target.value)} placeholder="0.00" /></td>
+                          <td><input type="number" min="0" max="100" step="1" value={r.discount} onChange={e => updateRow(r.id, 'discount', e.target.value)} placeholder="0" /></td>
+                          <td><input type="text" disabled value={fmtExact(r.dealPrice)} className="derived" /></td>
+                          <td><input type="number" min="0" value={r.units} onChange={e => updateRow(r.id, 'units', e.target.value)} placeholder="0" /></td>
+                          <td><input type="text" disabled value={fmtExact(r.lineOps)} className="derived" /></td>
+                          <td>{rows.length > 1 && <button className="btn btn-remove" onClick={() => removeRow(r.id)}>✕</button>}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr>
+                      <td colSpan="4" style={{ textAlign: 'right' }}>促銷 OPS 合計：</td>
+                      <td colSpan="2" style={{ color: 'var(--prime-orange)' }}>{fmtExact(calc.ops)}</td><td></td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+                <div className="btn-row">
+                  <button className="btn btn-add" onClick={addRow}>+ 新增 {config.label}</button>
+                  <span style={{ fontSize: 12, color: 'var(--muted)', alignSelf: 'center' }}>{rows.length} 個 {config.label}{config.cap === 1 ? ` = ${rows.length} 筆促銷` : '（1 筆促銷）'}</span>
+                </div>
+              </>) : (<>
+                <div className="input-grid" style={{ gridTemplateColumns: '1fr', marginBottom: 16 }}>
+                  <div className="field">
+                    <label>{config.label} 數量</label>
+                    <input type="number" min="0" value={count} onChange={handleNum(setCount)} placeholder={`${config.label} 數量`} />
+                    <div className="hint">{config.hint}</div>
+                    {isOverCap && <div className="cap-warn">⚠️ 超過每筆促銷上限 {config.cap} 個</div>}
+                  </div>
+                </div>
+                <div className="toggle-row">
+                  <span className={opsMode === 'derived' ? 'active' : ''}>數量 × 價格</span>
+                  <div className={`toggle-switch ${opsMode === 'direct' ? 'on' : ''}`} onClick={() => setOpsMode(m => m === 'direct' ? 'derived' : 'direct')} />
+                  <span className={opsMode === 'direct' ? 'active' : ''}>直接輸入 OPS</span>
+                </div>
+                {opsMode === 'direct' ? (
+                  <div className="input-grid" style={{ gridTemplateColumns: '1fr' }}>
+                    <div className="field"><label>預估 OPS ($)</label><input type="number" min="0" step="0.01" value={directOps} onChange={handleNum(setDirectOps)} placeholder="訂單商品銷售總額" /></div>
+                  </div>
+                ) : (
+                  <div className="input-grid">
+                    <div className="field"><label>預估銷售數量</label><input type="number" min="0" value={units} onChange={handleNum(setUnits)} placeholder="總數量" /></div>
+                    <div className="field"><label>促銷價格 ($)</label><input type="number" min="0" step="0.01" value={price} onChange={handleNum(setPrice)} placeholder="單價" /></div>
+                  </div>
+                )}
+              </>)}
+            </div>
+            <div className="card">
+              <div className="card-title">📈 自動計算結果</div>
+              <div className="results-grid">
+                <div className="result-box">
+                  <div className="result-label">訂單商品銷售額 (OPS)</div>
+                  <div className="result-value">{fmt(calc.ops)}</div>
+                  <div className="result-sub">{inputLevel === 'item' ? `${rows.length} 個 ${config.label} 合計` : opsMode === 'direct' ? '直接輸入' : `${num(units || 0)} 件 × ${fmtExact(price || 0)}`}</div>
+                </div>
+                <div className="result-box">
+                  <div className="result-label">有效促銷數量</div>
+                  <div className="result-value">{num(calc.d)}</div>
+                  <div className="result-sub">{dealType} — 以 {config.label} 計算</div>
+                </div>
+                <div className="result-box highlight">
+                  <div className="result-label">預估促銷費用總計</div>
+                  <div className="result-value">{fmtExact(calc.totalFee)}</div>
+                  <div className="result-sub">佔 OPS 的 {calc.feeAsPercent.toFixed(2)}% &nbsp;|&nbsp; 每筆促銷 {fmtExact(calc.feePerDeal)}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-title">🧾 費用明細</div>
+              <div className="breakdown">
+                <div className="breakdown-row"><span className="label">固定費用（{calc.d} 筆促銷 × {fmt(calc.flatRate)}{effectiveEarlyBird ? ' 早鳥' : ''}）</span><span className="value">{fmtExact(calc.totalFlat)}</span></div>
+                <div className="breakdown-row"><span className="label">浮動費用（OPS 的 1.5%）</span><span className="value">{fmtExact(calc.rawVariable)}</span></div>
+                <div className={`breakdown-row ${calc.capHit ? 'cap-hit' : ''}`}><span className="label">浮動費用上限（{fmt(VARIABLE_CAP)} × {calc.d} 筆 = {fmt(VARIABLE_CAP * calc.d)}）</span><span className="value">{calc.capHit ? `已觸及上限 → ${fmtExact(calc.cappedVariable)}` : '未觸及上限'}</span></div>
+                <div className="breakdown-row" style={{ borderTop: '2px solid #0f1111', fontWeight: 700 }}><span className="label" style={{ color: 'var(--text)', fontWeight: 700 }}>費用總計</span><span className="value" style={{ fontSize: '18px', color: 'var(--prime-orange)' }}>{fmtExact(calc.totalFee)}</span></div>
+                {effectiveEarlyBird && calc.savings > 0 && (<div className="breakdown-row"><span className="label" style={{ color: 'var(--green)' }}>🐦 早鳥節省金額（相較標準費率）</span><span className="value" style={{ color: 'var(--green)' }}>−{fmtExact(calc.savings)}</span></div>)}
+              </div>
+            </div>
+            <div className="card" style={{ background: '#f0f7fb', borderColor: '#b6d4e8' }}>
+              <div className="card-title">💡 費用結構與促銷類型規則</div>
+              <div className="breakdown">
+                <div className="breakdown-row"><span className="label">每筆促銷固定費用</span><span className="value">{fmt(FLAT_FEE)}</span></div>
+                <div className="breakdown-row"><span className="label">早鳥固定費用（僅限 Best Deal / Lightning Deal）</span><span className="value">{fmt(EARLY_BIRD_FEE)}（5 折優惠）</span></div>
+                <div className="breakdown-row"><span className="label">浮動費率</span><span className="value">OPS 的 1.5%</span></div>
+                <div className="breakdown-row"><span className="label">每筆促銷浮動費用上限</span><span className="value">{fmt(VARIABLE_CAP)}</span></div>
+                <div className="breakdown-row"><span className="label">Prime 專屬折扣 / 手動促銷</span><span className="value">每筆促銷最多 500 個 ASIN</span></div>
+                <div className="breakdown-row"><span className="label">Best Deal / Lightning Deal</span><span className="value">每筆促銷 1 個 pASIN</span></div>
+              </div>
+            </div>
+            <button className="btn btn-export" onClick={exportCSV}>📥 匯出結果為 CSV</button>
+            <div className="disclaimer">⚠️ 本計算器僅提供估算結果，實際費用可能依 Prime Day 2026 最終條款而有所不同。<br/>費用公式：（促銷數量 × 固定費用）+ min（1.5% × OPS, $5,000 × 促銷數量）</div>
+          </div>
+        </>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
